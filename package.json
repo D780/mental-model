@@ -21,6 +21,7 @@
     "egg-view-nunjucks": "^2.2.0",
     "exceljs": "^1.12.2",
     "fs-extra": "^8.0.1",
+    "gm": "^1.23.1",
     "ipaddr.js": "^1.9.0",
     "lodash": "^4.17.11",
     "moment": "^2.24.0",
