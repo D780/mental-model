@@ -6,6 +6,9 @@
 
 'use strict';
 
+/* eslint-disable no-shadow */
+const fs      = require('fs-extra');
+const path    = require('path');
 const _       = require('lodash');
 const crypto  = require('crypto');
 const md5salt = require('apache-md5');
@@ -14,14 +17,17 @@ const uuid    = require('uuid');
 const ipaddr  = require('ipaddr.js');
 const os      = require('os');
 const pinyin  = require('pinyin');
+/* eslint-enable no-shadow */
 
 module.exports = {
   objectStringify,
+  stringObjectify,
   getObjectSymbolKey,
   getObjectSymbolKeys,
   getObjectSymbol,
   getObjectSymbols,
   md5,
+  md5File,
   moment,
   md5salt,
   uuid,
@@ -35,8 +41,13 @@ module.exports = {
   getPinyin,
 };
 
-// 对象字符串化
-// indent 最大值为10（JSON.stringify限制）
+/**
+ * 对象字符串化
+ *
+ * @param {Object} obj    输入对象
+ * @param {Number} indent 缩进空格数 最大值为10（JSON.stringify限制）
+ * @returns {String}
+ */
 function objectStringify(obj, indent) {
   if (indent >= 1) {
     return JSON.stringify(obj, null, indent).replace(/"(\w+)"(\s*:\s*)/g, '$1$2').replace(/"/g, '\'');
@@ -44,6 +55,23 @@ function objectStringify(obj, indent) {
 
   return JSON.stringify(obj).replace(/"(\w+)"(\s*:\s*)/g, '$1$2 ').replace(/,/g, ', ')
     .replace(/"/g, '\'');
+}
+
+/**
+ * 字符串对象化 (对类 JSON 格式字符串 转换成相应对象)
+ *
+ * @param {String} str    输入字符攒
+ * @returns {Object}
+ */
+function stringObjectify(str) {
+  const json = str.replace(/'/g, '"').replace(/(\w+)(\s*:\s*)/g, '"$1"$2');
+  let ret = {};
+  try {
+    ret = JSON.parse(json);
+  } catch (e) {
+    // eslint-keep
+  }
+  return ret;
 }
 
 
@@ -103,7 +131,7 @@ function getObjectSymbols(obj) {
 }
 
 /**
- * 计算字符串md5值
+ * 计算字符串 md5 值
  * @param {String} str
  * @returns {*}
  */
@@ -114,6 +142,62 @@ function md5(str) {
   md5Hash.update(str);
   const hash = md5Hash.digest('hex');
   return hash;
+}
+
+/**
+ * 计算文件 md5 值(支持文件夹)
+ * @param {String} filePath 文件路径
+ * @param {Number} type   返回格式，可选 [1,2,3]
+ *                        1 返回为一个 MD5 (文件夹 MD5 由文件夹 下所有文件 MD5 使用下划线连接再进行一次 MD5 得到)
+ *                        2 返回为一个文件 MD5值 映射表，每个文件按平级列出
+ *                        3 返回为一个文件 MD5值 映射表，文件按原有的树级结构列出
+ * @returns {*}
+ */
+function md5File(filePath, type) {
+  type = Number(type) || 1;
+  if (type > 3 || type < 1) {
+    type = 1;
+  }
+  const stat = fs.statSync(filePath);
+  let str;
+  let ret = {};
+  if (stat.isDirectory()) {
+    // 文件夹
+    let fileList = fs.readdirSync(filePath);
+    fileList = _.sortBy(fileList);
+    if (type === 1) {
+      const strList = [];
+      _.map(fileList, item => {
+        strList.push(md5File(path.join(filePath, item), 1));
+      });
+      str = strList.join('_');
+      str = md5(str);
+    } else if (type === 2) {
+      _.map(fileList, item => {
+        ret = { ...ret, ... md5File(path.join(filePath, item), 2) };
+      });
+    } else {
+      ret[path.basename(filePath)] = {};
+      _.map(fileList, item => {
+        ret[path.basename(filePath)] = { ...ret[path.basename(filePath)], ...md5File(path.join(filePath, item), 3) };
+      });
+    }
+  } else {
+    // 普通文件
+    /* eslint-disable-next-line no-lonely-if */
+    if (type === 1) {
+      str = md5(fs.readFileSync(filePath));
+    } else if (type === 2) {
+      ret[filePath] = md5(fs.readFileSync(filePath));
+    } else {
+      ret[path.basename(filePath)] = md5(fs.readFileSync(filePath));
+    }
+  }
+  if (type === 1) {
+    return str;
+  } if (type === 2) {
+    return ret;
+  }
 }
 
 /**
