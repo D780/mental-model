@@ -22,6 +22,8 @@ const pinyin  = require('pinyin');
 module.exports = {
   objectStringify,
   stringObjectify,
+  JSONReplacer,
+  JSONReviver,
   getObjectSymbolKey,
   getObjectSymbolKeys,
   getObjectSymbol,
@@ -45,15 +47,27 @@ module.exports = {
  * 对象字符串化
  *
  * @param {Object} obj    输入对象
- * @param {Number} indent 缩进空格数 最大值为10（JSON.stringify限制）
+ * @param {Function} [replacer] replacer
+ * @param {Number} [indent]   缩进空格数 最大值为10（JSON.stringify限制）
  * @returns {String}
  */
-function objectStringify(obj, indent) {
-  if (indent >= 1) {
-    return JSON.stringify(obj, null, indent).replace(/"(\w+)"(\s*:\s*)/g, '$1$2').replace(/"/g, '\'');
+function objectStringify(obj, replacer, indent) {
+  if (!obj) {
+    return obj;
   }
 
-  return JSON.stringify(obj).replace(/"(\w+)"(\s*:\s*)/g, '$1$2 ').replace(/,/g, ', ')
+  if (indent >= 1) {
+    return JSON.stringify(obj, replacer, indent)
+      .replace(/"(\w+)"(\s*:\s*)/g, '$1$2')
+      .replace(/"/g, '\'');
+  }
+
+  return JSON.stringify(obj, replacer)
+    .replace(/"(\w+)"(\s*:\s*)/g, '$1$2 ')
+    .replace(/,/g, ', ')
+    .replace(/\{/g, '{ ')
+    .replace(/\}/g, ' }')
+    .replace(/\{\s\s\}/g, '{}')
     .replace(/"/g, '\'');
 }
 
@@ -61,19 +75,73 @@ function objectStringify(obj, indent) {
  * 字符串对象化 (对类 JSON 格式字符串 转换成相应对象)
  *
  * @param {String} str    输入字符攒
+ * @param {Function} [reviver] reviver
  * @returns {Object}
  */
-function stringObjectify(str) {
-  const json = str.replace(/'/g, '"').replace(/(\w+)(\s*:\s*)/g, '"$1"$2');
+function stringObjectify(str, reviver) {
+  if (!str) {
+    return str;
+  }
+
+  const json = str.replace(/'/g, '"')
+    .replace(/(\w+)(\s*:\s*)/g, '"$1"$2')
+    .replace(/,\s*"\w+"\s*:\s*undefined/g, '')
+    .replace(/"\w+"\s*:\s*undefined\s*,/g, '');
   let ret = {};
   try {
-    ret = JSON.parse(json);
+    ret = JSON.parse(json, reviver);
   } catch (e) {
     // eslint-keep
   }
   return ret;
 }
 
+/**
+ * JSON 的 replacer 插件
+ * 增加对 function regexp 的支持
+ *
+ * @param {*} key   键
+ * @param {*} value 值
+ * @returns {*}
+ */
+function JSONReplacer(key, value) {
+  if (value instanceof RegExp) {
+    return `[REGEXP]${value.toString()}`;
+  }
+  if (value instanceof Function) {
+    return `[FUNCTION]${value.toString()}`;
+  }
+  if (value instanceof Date) {
+    return `[DATE]${value.toString()}`;
+  }
+  return value;
+}
+
+/**
+ * JSON 的 reviver 插件
+ * 增加对 function regexp 的支持
+ *
+ * @param {*} key   键
+ * @param {*} value 值
+ * @returns {*}
+ */
+function JSONReviver(key, value) {
+  if (typeof value === 'string' && value.indexOf('[REGEXP]') === 0) {
+    const [, regexp, option] = value.replace('[REGEXP]', '').split('/');
+    return new RegExp(regexp, option);
+  }
+  if (typeof value === 'string' && value.indexOf('[FUNCTION]') === 0) {
+    const functionBody = value.replace('[FUNCTION]', '');
+    /* eslint-disable no-new-func */
+    return new Function(`return (${functionBody})(...arguments)`);
+    /* eslint-enable no-new-func */
+  }
+  if (typeof value === 'string' && value.indexOf('[DATE]') === 0) {
+    const dateString = value.replace('[DATE]', '');
+    return new Date(dateString);
+  }
+  return value;
+}
 
 /**
  * 获取对象 symbol key
@@ -132,12 +200,12 @@ function getObjectSymbols(obj) {
 
 /**
  * 计算字符串 md5 值
- * @param {String} str
+ * @param {String} content
  * @returns {*}
  */
-function md5(str) {
-  const buf = new Buffer(str);
-  str = buf.toString('binary');
+function md5(content) {
+  const buf = Buffer.from(content);
+  const str = buf.toString('binary');
   const md5Hash = crypto.createHash('md5');
   md5Hash.update(str);
   const hash = md5Hash.digest('hex');
