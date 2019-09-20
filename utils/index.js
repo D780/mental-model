@@ -49,26 +49,34 @@ module.exports = {
  * @param {Object} obj    输入对象
  * @param {Function} [replacer] replacer
  * @param {Number} [indent]   缩进空格数 最大值为10（JSON.stringify限制）
+ * @param {Number} [prefixIndent]   缩进修正值 默认0（即整体左测修正缩进，如设置为 2，每一行默认追加两个空格在行首）
  * @returns {String}
  */
-function objectStringify(obj, replacer, indent) {
+function objectStringify(obj, replacer, indent, prefixIndent) {
   if (!obj) {
     return obj;
   }
 
+  let ret;
   if (indent >= 1) {
-    return JSON.stringify(obj, replacer, indent)
+    ret = JSON.stringify(obj, replacer, indent)
       .replace(/"(\w+)"(\s*:\s*)/g, '$1$2')
       .replace(/"/g, '\'');
+  } else {
+    ret = JSON.stringify(obj, replacer)
+      .replace(/"(\w+)"(\s*:\s*)/g, '$1$2 ')
+      .replace(/,/g, ', ')
+      .replace(/:\{/g, ': {')
+      .replace(/\{/g, '{ ')
+      .replace(/\}/g, ' }')
+      .replace(/\{\s\s\}/g, '{}')
+      .replace(/"/g, '\'');
   }
-
-  return JSON.stringify(obj, replacer)
-    .replace(/"(\w+)"(\s*:\s*)/g, '$1$2 ')
-    .replace(/,/g, ', ')
-    .replace(/\{/g, '{ ')
-    .replace(/\}/g, ' }')
-    .replace(/\{\s\s\}/g, '{}')
-    .replace(/"/g, '\'');
+  if (prefixIndent >= 1) {
+    const spaces = new Array(prefixIndent + 1).join(' ');
+    ret = spaces + ret.replace(/\n/g, `\n${spaces}`);
+  }
+  return ret;
 }
 
 /**

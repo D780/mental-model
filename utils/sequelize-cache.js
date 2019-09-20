@@ -29,12 +29,12 @@ function bulidClassMethod(Model, client, ttl) {
 
   _.map(funcMap.get, func => {
     retFunc[func] = (async function() {
-      const optMD5 = md5[JSON.stringify(symbolStringify(arguments[0]))];
+      const optMD5 = md5(JSON.stringify(symbolStringify(arguments[0])));
       const cacheKey = `${KEYPREFIX}:${this.name}:${associateModels(arguments[0])}:${optMD5}`;
       let ret = await client.get(cacheKey);
       if (ret) {
         if (ret.rows) {
-          ret.row = toInstances(this, ret.rows);
+          ret.rows = toInstances(this, ret.rows);
         } else if (Array.isArray(ret)) {
           ret = toInstances(this, ret);
         } else {
@@ -54,6 +54,7 @@ function bulidClassMethod(Model, client, ttl) {
       return await Model[func](...arguments);
     }).bind(Model);
   });
+  return retFunc;
 }
 
 function buildInstanceMethod(Instance, client, ttl) {
@@ -64,6 +65,7 @@ function buildInstanceMethod(Instance, client, ttl) {
       return await Instance[func](...arguments);
     }).bind(Instance);
   });
+  return retFunc;
 }
 
 function associateModels(options) {
@@ -94,10 +96,10 @@ function symbolStringify(obj) {
     const ret = _.cloneDeep(obj);
     _.map(keys, key => {
       if (typeof key === 'symbol') {
-        obj[key.toString()] = symbolStringify(obj[key]);
-        delete obj[key];
+        ret[key.toString()] = symbolStringify(ret[key]);
+        delete ret[key];
       } else {
-        obj[key] = symbolStringify(obj[key]);
+        ret[key] = symbolStringify(ret[key]);
       }
     });
     return ret;
@@ -145,7 +147,7 @@ function loadAssociations(model) {
   Object.keys(model.associations).forEach(key => {
     //  model.associations[key] does not work on include, we grab it from sequelize.model()
     if (model.associations[key].hasOwnProperty('options')) {
-      const modelName = model.associations[key].options.name.singular;
+      const modelName = model.associations[key].target.name;
       associations.push({
         model: model.sequelize.model(modelName),
         as   : key,
