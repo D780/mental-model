@@ -12,9 +12,18 @@ class ErrorTraceLogger {
   constructor(logger, options) {
     this.title = 'ErrorTraceLogger';
     this.logger = logger || console;
+    this._enable = _.isUndefined(options.enable) ? true : options.enable;
     this.maxLength = options.maxLength || 50;
     this[CACHE] = [];
     this[BUILD]();
+  }
+
+  set enable(val) {
+    this._enable = Boolean(val);
+    if (!this._enable) {
+      // 关闭时 清空缓存
+      this[CACHE] = [];
+    }
   }
 
   [PUSH](func, contents) {
@@ -28,7 +37,11 @@ class ErrorTraceLogger {
     for (const func in this.logger) {
       if (['log', 'info', 'warn', 'error', 'trace', 'debug', 'mark', 'fatal'].indexOf(func) >= 0) {
         this[func] = function(...contents) {
-          this[PUSH](func, contents);
+          if (this._enable) {
+            this[PUSH](func, contents);
+          } else {
+            this.logger[func](...contents);
+          }
         };
       } else {
         this[func] = this.logger[func];

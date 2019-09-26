@@ -35,6 +35,8 @@ module.exports = {
   uuid,
   base64Encode,
   base64Decode,
+  htmlEncode,
+  htmlDecode,
   bkdrHash,
   toJSON,
   ip624,
@@ -301,6 +303,24 @@ function base64Decode(data) {
   return ret;
 }
 
+/**
+ * html 编码
+ * @param {String} str
+ * @returns {*}
+ */
+function htmlEncode(str) {
+  return str.replace(/[<>&"]/g, function(c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]; });
+}
+
+/**
+ * html 解码
+ * @param {String} str
+ * @returns {*}
+ */
+function htmlDecode(str) {
+  const arrEntities = { 'lt': '<', 'gt': '>', 'nbsp': ' ', 'amp': '&', 'quot': '"' };
+  return str.replace(/&(lt|gt|nbsp|amp|quot);/ig, function(all, t) { return arrEntities[t]; });
+}
 
 /**
  * 用于将邮箱转换为imid

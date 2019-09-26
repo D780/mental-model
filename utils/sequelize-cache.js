@@ -29,7 +29,7 @@ function bulidClassMethod(Model, client, ttl) {
 
   _.map(funcMap.get, func => {
     retFunc[func] = (async function() {
-      const optMD5 = md5(JSON.stringify(symbolStringify(arguments[0])));
+      const optMD5 = md5(JSON.stringify(`${func}${symbolStringify(arguments[0])}`));
       const cacheKey = `${KEYPREFIX}:${this.name}:${associateModels(arguments[0])}:${optMD5}`;
       let ret = await client.get(cacheKey);
       if (ret) {
