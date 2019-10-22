@@ -24,6 +24,8 @@ module.exports = {
   stringObjectify,
   JSONReplacer,
   JSONReviver,
+  symbolObjectStringify,
+  symbolStringObjectify,
   getObjectSymbolKey,
   getObjectSymbolKeys,
   getObjectSymbol,
@@ -62,11 +64,11 @@ function objectStringify(obj, replacer, indent, prefixIndent) {
   let ret;
   if (indent >= 1) {
     ret = JSON.stringify(obj, replacer, indent)
-      .replace(/"(\w+)"(\s*:\s*)/g, '$1$2')
+      .replace(/"([^"]+)"(\s*:\s*)/g, '$1$2')
       .replace(/"/g, '\'');
   } else {
     ret = JSON.stringify(obj, replacer)
-      .replace(/"(\w+)"(\s*:\s*)/g, '$1$2 ')
+      .replace(/"([^"]+)"(\s*:\s*)/g, '$1$2 ')
       .replace(/,/g, ', ')
       .replace(/:\{/g, ': {')
       .replace(/\{/g, '{ ')
@@ -94,9 +96,9 @@ function stringObjectify(str, reviver) {
   }
 
   const json = str.replace(/'/g, '"')
-    .replace(/(\w+)(\s*:\s*)/g, '"$1"$2')
-    .replace(/,\s*"\w+"\s*:\s*undefined/g, '')
-    .replace(/"\w+"\s*:\s*undefined\s*,/g, '');
+    .replace(/(\w[^\s:"]+)(\s*:\s*)/g, '"$1"$2')
+    .replace(/,\s*"\w[^"]+"\s*:\s*undefined/g, '')
+    .replace(/"\w[^"]+"\s*:\s*undefined\s*,/g, '');
   let ret = {};
   try {
     ret = JSON.parse(json, reviver);
@@ -151,6 +153,90 @@ function JSONReviver(key, value) {
     return new Date(dateString);
   }
   return value;
+}
+
+/**
+ * 对象字符串化(支持 symbol)
+ * objectStringify extra
+ *
+ * @param {Object} obj    输入对象
+ * @param {Function} [replacer] replacer
+ * @param {Number} [indent]   缩进空格数 最大值为10（JSON.stringify限制）
+ * @param {Number} [prefixIndent]   缩进修正值 默认0（即整体左测修正缩进，如设置为 2，每一行默认追加两个空格在行首）
+ * @returns {String}
+ */
+function symbolObjectStringify(obj, replacer, indent, prefixIndent) {
+  if (!obj) {
+    return obj;
+  }
+
+  function mapKeysDeep(o) {
+    if (Array.isArray(o)) {
+      const ret = [];
+      _.map(o, i => {
+        ret.push(mapKeysDeep(i));
+      });
+      return ret;
+    }
+    if (typeof o === 'object') {
+      const keys = Reflect.ownKeys(o);
+      const ret = {};
+      _.map(keys, key => {
+        ret[key.toString()] = mapKeysDeep(o[key]);
+      });
+      return ret;
+    }
+    return typeof o === 'symbol' ? o.toString() : o;
+  }
+
+  return objectStringify(mapKeysDeep(obj), replacer, indent, prefixIndent);
+}
+
+/**
+ * 字符串对象化(支持 symbol) (对类 JSON 格式字符串 转换成相应对象)
+ * stringObjectify extra
+ *
+ * @param {String} str    输入字符攒
+ * @param {Function} [reviver] reviver
+ * @returns {Object}
+ */
+function symbolStringObjectify(str, reviver) {
+  if (!str) {
+    return str;
+  }
+
+  function mapKeysDeep(o) {
+    if (Array.isArray(o)) {
+      const ret = [];
+      _.map(o, i => {
+        ret.push(mapKeysDeep(i));
+      });
+      return ret;
+    }
+    if (typeof o === 'object') {
+      const keys = Reflect.ownKeys(o);
+      const ret = {};
+      _.map(keys, key => {
+        const m = key.match(/^Symbol\(([^)]+)\)$/);
+        if (m && m[1]) {
+          ret[Symbol(m[1])] = mapKeysDeep(o[key]);
+        } else {
+          ret[key] = mapKeysDeep(o[key]);
+        }
+      });
+      return ret;
+    }
+    if (typeof o === 'string') {
+      const m = o.match(/^Symbol\(([^)]+)\)$/);
+      if (m && m[1]) {
+        return Symbol(m[1]);
+      }
+    }
+    return o;
+  }
+
+  const obj = stringObjectify(str, reviver);
+  return mapKeysDeep(obj);
 }
 
 /**

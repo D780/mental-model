@@ -1,6 +1,3 @@
-/**
- * JSZip 扩展
- */
 'use strict';
 /* eslint-disable no-shadow */
 
@@ -10,6 +7,11 @@ const path = require('path');
 const { Stream } = require('stream');
 const request = require('request');
 
+/**
+ * JSZip 扩展
+ * @class JSZipExtra
+ * @extends {JSZip}
+ */
 class JSZipExtra extends JSZip {
   constructor() {
     super();
@@ -24,6 +26,11 @@ class JSZipExtra extends JSZip {
     };
   }
 
+  /**
+   * 以数组的方式 push [多个]文件进压缩包中
+   * @param {string[] | string} filePathList 文件路径[列表]
+   * @memberof JSZipExtra
+   */
   async push(filePathList) {
     if (!Array.isArray(filePathList)) {
       filePathList = [filePathList];
@@ -47,6 +54,11 @@ class JSZipExtra extends JSZip {
     }
   }
 
+  /**
+   * 以数组的方式 push [多个]远程文件进压缩包中
+   * @param { (string|Stream)[]} urlPathList 文件路径[列表]
+   * @memberof JSZipExtra
+   */
   async pushUrl(urlPathList) {
     if (!Array.isArray(urlPathList)) {
       urlPathList = [urlPathList];

@@ -12,7 +12,7 @@ const ErrorTraceLogger = require('./utils/error_trace_logger');
 
 /**
  * app entry
- * @param {EGG.Application} app
+ * @param {Egg.Application} app
  */
 module.exports = async app => {
   app.config.coreMiddleware.unshift('accessLogger');
@@ -20,7 +20,7 @@ module.exports = async app => {
   app.config.coreMiddleware.unshift('gzip');
 
   app.utils = utils;
-  app.utils.excel = excel;
+  app.excel = excel;
   app.JSZip = JSZip;
   app.cache = new Cache(app.redis.get('cache'));
   app.session = new Cache(app.redis.get('session'));
@@ -51,6 +51,7 @@ module.exports = async app => {
     }
     app.errorTraceLogger.info('[model]', chalk.magenta(sql), `(${args[1]}ms)`);
   };
+  app.JSZip.push('ddd');
 
   // 调整 router 加载顺序，先 app/router.js, 再是 app/route/**.js
   app.loader.loadRouter = function() {

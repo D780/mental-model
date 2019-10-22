@@ -8,6 +8,13 @@ const CACHE = Symbol('ErrorTraceLogger#CACHE');
 const PUSH = Symbol('ErrorTraceLogger#PUSH');
 const BUILD = Symbol('ErrorTraceLogger#BUILD');
 
+/**
+ * 错误追踪日志
+ * 接受 logger 对象然后以该对象为原形构造
+ * 在正常情况输出日志保存在内存中（限制条数），在出错时使用 this.output() 输出出错前的具体日志
+ *
+ * @class ErrorTraceLogger
+ */
 class ErrorTraceLogger {
   constructor(logger, options) {
     this.title = 'ErrorTraceLogger';
@@ -18,6 +25,11 @@ class ErrorTraceLogger {
     this[BUILD]();
   }
 
+  /**
+   * 设置是否启用
+   * @param {boolean} val
+   * @memberof ErrorTraceLogger
+   */
   set enable(val) {
     this._enable = Boolean(val);
     if (!this._enable) {
@@ -48,6 +60,12 @@ class ErrorTraceLogger {
       }
     }
   }
+
+  /**
+   * 输出日志信息
+   *
+   * @memberof ErrorTraceLogger
+   */
   output() {
     const len = this[CACHE].length;
     const lenlen = (`${len}`).length;

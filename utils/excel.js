@@ -78,11 +78,22 @@ const colMap = {
 };
 
 /**
+ * @typedef ColStyle
+ * @type {Object.<string, Object>}
+ * @property {number} width        列宽
+ * @property {boolean} hidden       是否隐藏
+ * @property {boolean} outlineLevel 大纲视图
+ * @property {ExcelJS}                 
+ */
+
+
+/**
+ * 
  * 通用excel表格生成
  * 暂每行元素项最多支持26项
  * 本文件底部有完整的使用样例
- * @param {Array}   tmpPath - 生成的临时文件存放目录
- * @param {Array}   sheets  - sheets数据 sheets = {sheet1: {rows:rows1,colsStyle:colsStyle1,headRowsStyle:headRowsStyle1,rowsStyle:rowsStyle1}} ;
+ * @param {string}   tmpPath - 生成的临时文件存放目录
+ * @param {Object.<string, { rows: string[][], colsStyle: ColStyle[] }>} sheets  - sheets数据 sheets = {sheet1: {rows:rows1,colsStyle:colsStyle1,headRowsStyle:headRowsStyle1,rowsStyle:rowsStyle1}} ;
  *                            rows1 为 表格数据;
  *                            colsStyle1,headRowsStyle1,rowsStyle1 可选, 为sheet1 的独立样式,
  *                  rows的数据格式说明如下

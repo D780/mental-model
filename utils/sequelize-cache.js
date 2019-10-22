@@ -14,6 +14,7 @@ const funcMap = {
   instance: ['decrement', 'destroy', 'increment', 'reload', 'restore', 'save', 'set', 'setDataValue', 'update'],
 };
 
+
 module.exports = (Sequelize, client) => {
   Sequelize.Model.cache = function(ttl) {
     return bulidClassMethod(this, client, ttl || 3600);

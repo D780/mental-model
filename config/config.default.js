@@ -3,16 +3,59 @@
 const os = require('os');
 const path = require('path');
 
+/**
+ * @param {Egg.EggAppInfo} appInfo
+ * @returns Egg.EggAppConfig
+ */
 module.exports = appInfo => {
+  /**
+   * egg|插件|框架 配置
+   * @type {Egg.EggAppConfig}
+   *  */
   const config = {};
 
-  config.keys = `${appInfo.name}_1562573525227_5145`;
+  /** 自定义配置 */
+  const customConfig = {};
 
-  config.web = {
+  /** 站点基本信息 */
+  customConfig.web = {
     name: 'mental-model',
     url : 'http://www.mental-model.com',
     port: 9000,
   };
+
+  /** 目录信息 */
+  customConfig.paths = {
+    export: path.join(os.tmpdir(), appInfo.name, 'export'),
+    upload: path.join(os.tmpdir(), appInfo.name, 'upload'),
+  };
+
+  /** redis 缓存 Key */
+  customConfig.redisKey = {
+    system  : user => `${user}:system`,
+    userSess: user => `${user}:sess`,
+  };
+
+  /** 枚举 (string:number) */
+  customConfig.enumsInvert = {
+    User: {
+      status: { '正常': 0, '禁用': 1 },
+      type  : { '普通账号': 0, '游客账号': 1, '受限账号': 2, '开发者': 3 },
+    },
+  };
+
+  /** 枚举 (number:string) */
+  customConfig.enums = {
+    User: {
+      status: _.invert(config.enumsInvert.User.status),
+      type  : _.invert(config.enumsInvert.User.type),
+    },
+  };
+
+  // ==========================================================================
+
+  config.keys = `${appInfo.name}_1562573525227_5145`;
+
   config.gzip = {
     threshold: 1024,
   };
@@ -23,11 +66,6 @@ module.exports = appInfo => {
       port: 9000,
     },
   };
-
-  // systems
-  config.systems = [];
-  config.system = '';
-  config.authSite = '';
 
   // security
   config.security = {
@@ -58,11 +96,6 @@ module.exports = appInfo => {
 
   config.bcrypt = {
     saltRounds: 10, // default 10
-  };
-
-  config.paths = {
-    export: path.join(os.tmpdir(), appInfo.name, 'export'),
-    upload: path.join(os.tmpdir(), appInfo.name, 'upload'),
   };
 
   // static
@@ -109,25 +142,11 @@ module.exports = appInfo => {
       },
     },
   };
-  config.redisKey = {
-    system  : user => `${user}:system`,
-    userSess: user => `${user}:sess`,
-  };
 
   config.sessionRedis = {
     // specific instance `session` as the session store
     name: 'session',
   };
 
-  // enums
-  config.enumsInvert = {
-    // userStatus: {'正常': 0, '禁用': 1},
-    // userType  : {'普通账号': 0, '游客账号': 1, '受限账号': 2, '开发者': 3}
-  };
-  config.enums = {
-    // userStatus: _.invert(config.enumsInvert.userStatus),
-    // userType  : _.invert(config.enumsInvert.userType)
-  };
-
-  return config;
+  return { ...customConfig, ...config };
 };
