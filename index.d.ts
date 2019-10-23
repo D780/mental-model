@@ -575,6 +575,16 @@ declare module 'egg' {
   // 扩展 context
   interface Context {
     operatorLogs: _OperatorLog[];
+    
+    apiResult?:{
+      code: number;
+      msg?: string;
+      data?: any;
+    }
+    viewResult?: {
+      view: string;
+      data: any;
+    }
   }
 
   interface IModel {
@@ -605,9 +615,9 @@ declare module 'egg' {
   }
 
   interface IMiddleware {
-    accessLogger: typeof _AccessLogger;
-    gzip: typeof _Gzip;
-    responseWrapper: typeof _ResponseWrapper;
+    accessLogger: ReturnType<typeof _AccessLogger>;
+    gzip: ReturnType<typeof _Gzip>;
+    responseWrapper: ReturnType<typeof _ResponseWrapper>;
   }
 
   interface EggAppConfig extends ConfigDefault { }
