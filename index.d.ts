@@ -123,6 +123,119 @@ declare module 'egg' {
   /** 过滤判断配置类型 */
   type Filter = sequelize.WhereOptions;
 
+  type _logInfo = {
+    /** 操作类型 */
+    type: string;
+    /** 操作方法 */
+    method: string;
+    /** 操作语句（all 类型用） */
+    sql?: string;
+    /** 搜索的日志数量（search 用）*/
+    count?: number;    
+    /** 搜索的参数（search 用）*/
+    params?: any,
+    /** 搜索的参数（search 用）*/
+    query?: any,
+    /** 搜索的配置（search 用）*/
+    options?: any;
+    /** 搜索的联表配置（search 用）*/
+    include?: Include;
+    /** 搜索的排序配置（search 用）*/
+    sort?: string[];
+    /** 修改前数据 （除 all、search外均可用）*/
+    before?: any;
+    /** 修改后数据 （除 all、search外均可用）*/
+    after?: any;
+    /** 多记录字段变化内容（edit 用）*/
+    diffs?: any[][];
+    /** 单记录字段变化内容（edit 用）*/
+    diff?: any[];
+    /** 单记录字段变化内容（set 用）*/
+    changed?: { 
+      /** 删除记录条数量*/
+      toRemove: number; 
+      /** 添加记录条数量*/
+      toAdd: number; 
+      /** 编辑记录条数量*/
+      toEdit: number; 
+    }
+  }
+
+  type _diff = {
+    /** 字段名 */
+    key: string;    
+    /** 变化内容 */
+    change: string;
+    /** 变化信息日志 */
+    content: string;
+  }
+
+  type _logMessage = {
+    /** 操作类型 */
+    op: '添加' | '批量添加' | '删除' | '（假）删除' | '查询' | '编辑' | '设置' | '无分类';
+    /** 影响记录条数 （除查询、无分类外均可用） */
+    affect?: number;
+    /** 自动生成的操作日志 */
+    content: string;
+    /** 查询记录条数（仅查询用） */
+    count?: number;
+    /** 
+     * 联表信息（仅查询用）
+     * 值为关联表表名数组 
+     */
+    include?: string[];
+    /** 
+     * 排序信息（仅查询用） 
+     * 值为经处理后的排序信息数组 
+     */
+    sort?: string[];
+    /** 
+     * 查询条件信息（仅查询用）
+     * 值为经处理后的查询条件信息
+     */
+    condition?: string[];
+    /**
+     * 变化信息（仅编辑用） 
+     * 修改多条记录时
+     * 二维数组，外层为对应的一条条记录，内层则为相应记录的字段变化信息列表
+     */
+    diffs?: _diff[];
+    /** 
+     * 变化信息（仅编辑用） 
+     * 修改单条记录时（ById）
+     * 一维数组，值为相应记录的字段变化信息列表
+     */
+    diff?: _diff;
+    /** 删除记录条数量（仅设置用）*/
+    remove?: number;
+    /** 增加记录条数量（仅设置用）*/
+    add?: number;
+    /** 编辑记录条数量（仅设置用）*/
+    edit?: number;
+  }
+
+  /** 数据库操作日志类型 */
+  type _OperatorLog = {
+    /** 方法名 */
+    func: string;
+    /** 涉及的所有数据库操作信息 */
+    logInfos: _logInfo[];
+    /** 涉及的所有数据库操作信息日志 */
+    logMessages: _logMessage[];
+    /** 
+     * 数据库操作信息
+     * `${func}` 方法的操作信息
+     * （值为 logInfos 最后一个元素）
+     */
+    logInfo: _logInfo;
+    /** 
+     * 数据库操作信息日志
+     * `${func}` 方法的操作信息日志
+     * （值为 logMessages 最后一个元素）
+     */
+    logMessage: _logMessage;
+  }
+
   // redis cache 类型
   class _Cache {
     /**
@@ -458,6 +571,10 @@ declare module 'egg' {
     JSZip: _JSZipExtra;
     cache: _Cache;
     session: _Cache;
+  }
+  // 扩展 context
+  interface Context {
+    operatorLogs: _OperatorLog[];
   }
 
   interface IModel {
