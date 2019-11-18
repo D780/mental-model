@@ -83,8 +83,13 @@ declare module 'egg' {
   
   /** 搜索配置类型 */
   type Search = {
-    /** 搜索关键字 */
-    key: string;
+    /**
+     * 搜索关键字
+     * 有 2 中写法
+     * 1. 字符串： poi , 此时 SearchField 的 type 默认为 fuzzy，即模糊搜索模式
+     * 2. 两个元素的字符串数组：[ '1', '10' ]，此时 SearchField 的 type 默认为 range，即区间搜索模式，即搜索 值在 [ '1', '10' ] 之间的数据
+     */
+    key: string | [string, string];
     /** 作用字段 */
     fields: [ SearchField[] | SearchField ];
   }
