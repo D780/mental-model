@@ -51,7 +51,6 @@ module.exports = async app => {
     }
     app.errorTraceLogger.info('[model]', chalk.magenta(sql), `(${args[1]}ms)`);
   };
-  app.JSZip.push('ddd');
 
   // 调整 router 加载顺序，先 app/router.js, 再是 app/route/**.js
   app.loader.loadRouter = function() {
