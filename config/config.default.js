@@ -47,8 +47,8 @@ module.exports = appInfo => {
   /** 枚举 (number:string) */
   customConfig.enums = {
     User: {
-      status: _.invert(config.enumsInvert.User.status),
-      type  : _.invert(config.enumsInvert.User.type),
+      status: _.invert(customConfig.enumsInvert.User.status),
+      type  : _.invert(customConfig.enumsInvert.User.type),
     },
   };
 
@@ -101,7 +101,7 @@ module.exports = appInfo => {
   // static
   config.static = {
     prefix  : '',
-    dir     : [path.join(appInfo.baseDir, 'app/public'), { prefix: '/image', dir: path.join(config.paths.upload, 'image') }],
+    dir     : [path.join(appInfo.baseDir, 'app/public'), { prefix: '/image', dir: path.join(customConfig.paths.upload, 'image') }],
     dynamic : true,
     preload : false,
     buffer  : false,

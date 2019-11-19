@@ -1,7 +1,10 @@
 /**
  * 新加的excel导出 基于 exceljs 简单封装 支持大数据处理
  */
-/* eslint-disable*/
+/* eslint-disable max-statements */
+/* eslint-disable max-depth */
+/* eslint-disable no-shadow */
+/* eslint max-len: [2, 200] */
 
 'use strict';
 
@@ -16,8 +19,8 @@ const Excel   = require('exceljs');
 // 项目设置了 global.Promise= require('bluebird'), exclejs 使用的 promise 是 promish, 在这种情况下会冲突
 // （ bluebird检查报错 the promise constructor cannot be invoked directly）
 // 这里使用 exceljs 自带的 setConfigValue 可以把 promish 替换成 bluebird 这样才能正常使用
-const setConfigValue = require('exceljs/dist/es5/config/set-value');
-setConfigValue('promise', require('bluebird'), true);
+// const setConfigValue = require('exceljs/dist/es5/config/set-value');
+// setConfigValue('promise', require('bluebird'), true);
 
 
 exports.generateTable = generateTable;
@@ -83,17 +86,68 @@ const colMap = {
  * @property {number} width        列宽
  * @property {boolean} hidden       是否隐藏
  * @property {boolean} outlineLevel 大纲视图
- * @property {ExcelJS}                 
  */
 
+/**
+ * @typedef CellStyle
+ * @type {Object.<string, Object>}
+ * @property {string} numFmt    格式如 yyyy/m/d, 具体格式与 excel 的一致 (即单元格格式)
+ * @property {Object} font      字体 {name,family,scheme,charset,color,size,underline,bold,italic,strike,outline}
+ *                                  常用的有 name family color size underline bold italic
+ *                                    name   字体名称
+ *                                    family 字体家族 1 - Serif, 2 - Sans Serif, 3 - Mono (没特别要求也不需要管这个参数)
+ *                                    color  颜色 { argb: 'FF00FF00' }
+ *                                    size   字号
+ *                                    underline 下划线 可以简单设置true|false, 如有需要 也可以设置 double 设置双下划线
+ *                                    bold   是否加粗
+ *                                    italic 是否倾斜
+ * @property {string} font.name       字体名称
+ * @property {string} font.family     字体家族 1 - Serif, 2 - Sans Serif, 3 - Mono (没特别要求也不需要管这个参数)
+ * @property {string} font.scheme     scheme
+ * @property {string} font.charset    字符集
+ * @property {Object} font.color      颜色 如 { argb: 'FF00FF00' }
+ * @property {string} font.size       字号
+ * @property {boolean|string} font.underline  下划线 可以简单设置true|false, 如有需要 也可以设置 double 设置双下划线
+ * @property {boolean} font.bold       是否加粗
+ * @property {boolean} font.italic     是否倾斜
+ * @property {string} font.strike      strike
+ * @property {string} font.outline     outline
+ * @property {Object} alignment              对齐方式
+ * @property {string} alignment.horizontal   水平对齐方式 可选值 left center right fill justify centerContinuous distributed
+ * @property {string} alignment.vertical     垂直对齐方式 可选值 top middle bottom distributed justify
+ * @property {boolean} alignment.wrapText     是否启用自动换行
+ * @property {string} alignment.indent       缩进
+ * @property {string} alignment.readingOrder 阅读方向 可选值 rtl ltr
+ * @property {number} alignment.textRotation 文字旋转 可选值 0 to 90 -1 to -90 vertical
+ * @property {Object} fill      必要参数 type 有两个值 pattern(图案填充) gradient(渐变填充)
+ *                       根据 type 的选择对应的格式有两种
+ *                       {type='pattern', pattern, fgColor, bgColor}
+ *                       {type='gradient', gradient, degree, center, stops}
+ *                       没特别需要的话仅用 pattern 即可, 这里就不推荐用 gradient 了, 一般也不会去搞这些花样的, 也不做过多说明了
+ *                       pattern 可选挺多的, 没什么特殊要求用 solid 即可
+ *                       fgColor, bgColor 跟其他地方颜色一样 { argb: 'FF00FF00' }
+ * @property {Object} fill.type     pattern(图案填充) gradient(渐变填充)
+ * @property {Object} border    边框 {top, left, bottom, right, diagonal}
+ *                       5 个参数共有属性 style(边框样式) color(边框颜色)
+ *                       style 可选 thin dotted dashDot hair dashDotDot slantDashDot
+ *                                  mediumDashed mediumDashDotDot mediumDashDot medium double thick
+ *                       diagonal 是对角线的意思, 它除了 style color 外, 还有 up down 两个属性(true|false), 表示对角线的样式
+ *                                up 即从左下到右上的对角线 ╱ , down 为从左上到右下的对角线 ╲ (同时设置为true, 就像是给单元格打个×了)
+ * @property {Object} border.top      上边框样式
+ * @property {Object} border.left     左边框样式
+ * @property {Object} border.bottom   下边框样式
+ * @property {Object} border.right    右边框样式
+ * @property {Object} border.diagonal 对角线样式
+ */
 
 /**
- * 
+ *
  * 通用excel表格生成
  * 暂每行元素项最多支持26项
  * 本文件底部有完整的使用样例
- * @param {string}   tmpPath - 生成的临时文件存放目录
- * @param {Object.<string, { rows: string[][], colsStyle: ColStyle[] }>} sheets  - sheets数据 sheets = {sheet1: {rows:rows1,colsStyle:colsStyle1,headRowsStyle:headRowsStyle1,rowsStyle:rowsStyle1}} ;
+ * @param {string} tmpPath - 生成的临时文件存放目录
+ * @param {Object.<string, { rows: Array[], colsStyle: ColStyle[], headRowsStyle: RowStyle[], rowsStyle: CellStyle[], cellStyleMap: Object.<string, CellStyle> }>} sheets
+ *                  - sheets数据 sheets = {sheet1: {rows:rows1,colsStyle:colsStyle1,headRowsStyle:headRowsStyle1,rowsStyle:rowsStyle1}} ;
  *                            rows1 为 表格数据;
  *                            colsStyle1,headRowsStyle1,rowsStyle1 可选, 为sheet1 的独立样式,
  *                  rows的数据格式说明如下
@@ -122,11 +176,14 @@ const colMap = {
  *                ================
  *                colsStyle      -  对应列的样式 (主要是设置列宽等通用属性)
  *                headRowsStyle  -  头部行的样式（可以设置多行, 用于设置表头的样式）
- *                      如 [[cellStyle],rowStyle,[cellStyle]], 这样就设置了前三行的样式了
- *                      如果项是 cellStyle(数组)则设置每一个单元格的样式, 如果是 rowStyle(对象) 则设置整一行的样式
+ *                      如 [[CellStyle],rowStyle,[CellStyle]], 这样就设置了前三行的样式了
+ *                      如果项是 CellStyle(数组)则设置每一个单元格的样式, 如果是 rowStyle(对象) 则设置整一行的样式
  *                rowsStyle   基本行的样式（用于设置表格内容每一行的样式, 可不设置使用默认样式）
  *                        从 headRowsStyle.length+1 行开始设置后面所有行的样式 ,
  *                        如果是数组则设置每一个单元格的样式, 如果是对象则设置整一行的样式
+ *                cellStyleMap 单元格样式，针对特定单元格指定样式
+ *                             格式如 { 'A3': CellStyle }
+ *                             键为单元格坐标，值为单元格样式
  *                ---
  *                colsStyle 列样式常用属性 width  hidden   outlineLevel 以及 `单元格样式` (见下面)
  *                                         列宽  是否隐藏   大纲级别
@@ -196,9 +253,9 @@ async function generateTable(tmpPath, sheets) {
   //    ],
   //    'fsdfs']
   // ];
-  const filepath = path.join(tmpPath, `${uuid.v4()  }.xlsx`);
+  const filepath = path.join(tmpPath, `${uuid.v4()}.xlsx`);
   if (_.keys(sheets).length <= 0) {
-    return Promise.reject('未找到 sheet');
+    return Promise.reject(new Error('未找到 sheet'));
   }
 
   fs.ensureFileSync(filepath);
@@ -211,77 +268,39 @@ async function generateTable(tmpPath, sheets) {
   for (const key in sheets) {
     const sheet = sheets[key];
     if (!sheet.rows) {
-      return Promise.reject(`未找到 sheet(${key}) 的 rows 数据`);
+      return Promise.reject(new Error(`未找到 sheet(${key}) 的 rows 数据`));
     }
     const rows          = sheet.rows;
     const colsStyle     = sheet.colsStyle || [];
     const headRowsStyle = sheet.headRowsStyle || [];
     const rowsStyle     = sheet.rowsStyle || [];
+    const cellStyleMap  = sheet.cellStyleMap || {};
     const worksheet     = workbook.addWorksheet(key, {});
     let line            = 1;
+
+    // 行数据校验
+    // 含有多个数组元素时，相应长度必须一致
     for (let i = 0; i < rows.length; i++) {
       const rowOri = rows[i];
-      // 数据整理
-      let rowLen   = 1;
-      let colStart = -1;
-      let colEnd   = -1;
-      for (let j = 0; j < rowOri.length; j++) {
-        if (Array.isArray(rowOri[j])) {
-          rowLen = rowOri[j].length;
-          if (rowLen >= 2) {
-            colStart = j;
-            colEnd   = j + rowOri[j][0].length - 1;
-          }
-        }
+      const len = checkRowLen(rowOri);
+      if (len <= 0) {
+        return Promise.reject(new Error('数据有误'));
       }
-
-      const newRow = [];
-      for (let k = 0; k < rowLen; k++) {
-        let row = [];
-        for (let j = 0; j < rowOri.length; j++) {
-          if (Array.isArray(rowOri[j])) {
-            row = row.concat(rowOri[j][k]);
-          } else {
-            row.push(rowOri[j]);
-          }
-        }
-        newRow.push(row);
+    }
+    // 数据校验成功 正式处理数据
+    for (let i = 0; i < rows.length; i++) {
+      const rowOri = rows[i];
+      // 行数据整理
+      const rowLen = checkRowLen(rowOri);
+      const newRowsInfo = genNewRows(rowOri, rowLen, { x: 0, y: line - 1 });
+      _.map(newRowsInfo.rows, row => {
         worksheet.addRow(row);
-      }
-      // 整理需要合并的单元格信息
+      });
+
       const mergeInfo = [];
-      let lineTmp     = line;
-      for (let j = 0; j < newRow.length; j++) {
-        let rowStart = -1;
-        let rowEnd   = -1;
-        let k        = 0;
-        for (k = 0; k < newRow[j].length; k++) {
-          if (newRow[j][k] === null) {
-            rowEnd++;
-          } else {
-            if (rowLen >= 2 && k > 0 && (k - 1 < colStart || k - 1 > colEnd)) {
-              // 包含纵向合并
-              if (rowStart !== rowEnd || line !== (line + rowLen - 1)) {
-                mergeInfo.push(`${colMap[rowStart + 1]}${line}:${colMap[rowEnd + 1]}${line + rowLen - 1}`);
-              }
-            } else if (rowStart !== rowEnd) {
-                mergeInfo.push(`${colMap[rowStart + 1]}${lineTmp}:${colMap[rowEnd + 1]}${lineTmp}`);
-              }
-            rowStart = k;
-            rowEnd   = rowStart;
-          }
-        }
-        // 最后一列处理
-        if (rowLen >= 2 && k === newRow[j].length && (k - 1 < colStart || k - 1 > colEnd)) {
-          // 包含纵向合并
-          if (rowStart !== rowEnd || line !== (line + rowLen - 1)) {
-            mergeInfo.push(`${colMap[rowStart + 1]}${line}:${colMap[rowEnd + 1]}${line + rowLen - 1}`);
-          }
-        } else if (rowStart !== rowEnd) {
-            mergeInfo.push(`${colMap[rowStart + 1]}${lineTmp}:${colMap[rowEnd + 1]}${lineTmp}`);
-          }
-        lineTmp++;
-      }
+      _.map(newRowsInfo.mergeInfo, miObj => {
+        mergeInfo.push(`${colMap[miObj.x1]}${miObj.y1}:${colMap[miObj.x2]}${miObj.y2}`);
+      });
       _.map(_.uniq(mergeInfo), minfo => {
         worksheet.mergeCells(minfo);
       });
@@ -301,6 +320,7 @@ async function generateTable(tmpPath, sheets) {
       });
     });
     // 载入自定义样式
+    // 列样式
     if (colsStyle) {
       _.map(colsStyle, (style, idx) => {
         if (style) {
@@ -309,6 +329,7 @@ async function generateTable(tmpPath, sheets) {
         // worksheet.getColumn(idx + 1).width = style.width;
       });
     }
+    // 头部 N 行样式，每个元素为一行样式
     if (headRowsStyle) {
       _.map(headRowsStyle, (rowStyle, idxi) => {
         if (rowStyle) {
@@ -324,6 +345,7 @@ async function generateTable(tmpPath, sheets) {
         }
       });
     }
+    // 除了头部行样式外 所有通用行样式
     if (rowsStyle) {
       worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
         if (rowNumber > headRowsStyle.length || 0) {
@@ -341,6 +363,13 @@ async function generateTable(tmpPath, sheets) {
         }
       });
     }
+    // 单独设置单元格样式
+    if (cellStyleMap) {
+      _.map(cellStyleMap, (cellStyle, cellIdx) => {
+        const cell = worksheet.getCell(cellIdx);
+        _.assign(cell, cellStyle);
+      });
+    }
     worksheet.commit();
   }
   return await workbook.commit()
@@ -349,6 +378,170 @@ async function generateTable(tmpPath, sheets) {
     });
 }
 
+function checkRowLen(row) {
+  let len = 0;
+  let colLen;
+  for (let i = 0; i < row.length; i++) {
+    const col = row[i];
+    if (Array.isArray(col)) {
+      let tmpLen = col.length;
+      for (let j = 0; j < col.length; j++) {
+        const colRowLen = checkRowLen(col[j]);
+        tmpLen += (colRowLen - 1);
+      }
+      if (!colLen) {
+        colLen = tmpLen;
+      } else if (colLen !== tmpLen) {
+        return -9999;
+      }
+    }
+  }
+  if (!colLen) {
+    colLen = 1;
+  }
+  len += colLen;
+  return len;
+}
+
+function genNewRows(row, newRowLen, offset) {
+  if (!newRowLen) {
+    newRowLen = checkRowLen(row);
+  }
+  const col = [];
+  // let mergeInfo = {
+  //   offset: { x: 0, y: 0 },
+  //   cells : [],
+  // }
+  let mergeInfo = [];
+  offset = offset || { x: 0, y: 0 };
+  offset.x = offset.x || 0;
+  offset.y = offset.y || 0;
+
+  let truex = 0;
+  for (let i = 0; i < row.length; i++) {
+    if (Array.isArray(row[i])) {
+      let tmp = [];
+      let truey = 0;
+      for (let j = 0; j < row[i].length; j++) {
+        const subRow = row[i][j];
+        const ret = genNewRows(subRow, undefined, { x: truex, y: truey + offset.y });
+        tmp = tmp.concat(ret.rows);
+        mergeInfo = mergeInfo.concat(ret.mergeInfo);
+        truey = tmp.length;
+      }
+      row[i] = tmp;
+      const len = row[i][0].length;
+      for (let z = 0; z < len; z++) {
+        const tmpCol = [];
+        for (let j = 0; j < row[i].length; j++) {
+          tmpCol.push(row[i][j][z]);
+        }
+        col.push(tmpCol);
+      }
+      truex += len;
+    } else {
+      if (newRowLen > 1) {
+        mergeInfo.push({
+          x1: offset.x + truex + 1,
+          y1: offset.y + 1,
+          x2: offset.x + truex + 1,
+          y2: offset.y + newRowLen,
+        });
+      }
+      col.push(_.fill(new Array(newRowLen), row[i]));
+      truex++;
+    }
+  }
+  const rows = _.zip(...col);
+  for (let i = 0; i < rows.length; i++) {
+    const cols = rows[i];
+    let start = -1;
+    let end = -1;
+    for (let j = 0; j < cols.length; j++) {
+      const col = cols[j];
+      if (col === null) {
+        end++;
+        // 如果是最后一个，则需要额外添加一个合并单元格信息
+        if (j === cols.length - 1) {
+          mergeInfo.push({
+            x1: offset.x + start + 1,
+            y1: offset.y + i + 1,
+            x2: offset.x + end + 1,
+            y2: offset.y + i + 1,
+          });
+          start = j;
+          end = start;
+        }
+      } else {
+        if (start >= 0 && start !== end) {
+          mergeInfo.push({
+            x1: offset.x + start + 1,
+            y1: offset.y + i + 1,
+            x2: offset.x + end + 1,
+            y2: offset.y + i + 1,
+          });
+        }
+        start = j;
+        end = start;
+      }
+    }
+  }
+  // 合并横轴与纵轴的单元格合并信息
+  const mergeDetailInfo = [];
+  for (let o = 0; o < mergeInfo.length; o++) {
+    const detailInfo = [];
+    const left = { x: mergeInfo[o].x1, y: mergeInfo[o].y1 };
+    const right = { x: mergeInfo[o].x2, y: mergeInfo[o].y2 };
+    if (left.x === right.x) {
+      const [miny, maxy] = _.sortBy([left.y, right.y]);
+      for (let p = miny; p <= maxy; p++) {
+        detailInfo.push(`${left.x}_${p}`);
+      }
+    } else {
+      // left.y === right.y;
+      const [minx, maxx] = _.sortBy([left.x, right.x]);
+      for (let p = minx; p <= maxx; p++) {
+        detailInfo.push(`${p}_${left.y}`);
+      }
+    }
+    mergeDetailInfo.push(detailInfo);
+  }
+  const newMergeDetailInfo = [];
+  while (mergeDetailInfo.length) {
+    let nmdInfo = _.pullAt(mergeDetailInfo, 0)[0];
+    let flag;
+    do {
+      flag = false;
+      for (let o = 0; o < mergeDetailInfo.length; o++) {
+        const mergeCells = mergeDetailInfo[o];
+        for (let p = 0; p < mergeCells.length; p++) {
+          const mergeCell = mergeCells[p];
+          if (nmdInfo.indexOf(mergeCell) >= 0) {
+            flag = true;
+            break;
+          }
+        }
+        if (flag) {
+          nmdInfo = nmdInfo.concat(_.pullAt(mergeDetailInfo, o)[0]);
+          break;
+        }
+      }
+    } while (flag);
+    newMergeDetailInfo.push(nmdInfo);
+  }
+  const newMergeInfo = [];
+  for (let o = 0; o < newMergeDetailInfo.length; o++) {
+    let nmdInfo = newMergeDetailInfo[o];
+    nmdInfo = _.map(nmdInfo, item => _.map(item.split('_'), t => Number(t)));
+    newMergeInfo.push({
+      x1: _.min(_.map(nmdInfo, 0)),
+      y1: _.min(_.map(nmdInfo, 1)),
+      x2: _.max(_.map(nmdInfo, 0)),
+      y2: _.max(_.map(nmdInfo, 1)),
+    });
+  }
+  return { rows, mergeInfo: newMergeInfo };
+}
 
 /**
  * example
@@ -512,5 +705,55 @@ async function generateTable(tmpPath, sheets) {
 //     headRowsStyle,
 //     rowsStyle
 //   }
+// };
+// generateTable('./', sheets);
+
+/**
+ * example 2
+ * 含有复杂合并单元格结构测试例子
+ */
+// const rows          = [
+//   ['A1-A2', null, 'A3-A4', null, 'A5-A6', null, 'A7-A8', null],
+//   ['B1-C1', [['B2', 'B3-B4', null], ['C2', 'C3-C4', null]], 'B5-C6', null, 'B7-C8', null],
+//   ['D1-E1', [['D2', 'D3-D4', null], ['E2', 'E3-E4', null]], 'D5-E5', [['D6', 'D7-D8', null], ['E6', 'E7-E8', null]]],
+// ];
+// const colsStyle     = [
+//   { width: '20' },
+//   { width: '20' },
+//   { width: '20' },
+//   { width: '20' },
+//   { width: '20' },
+//   { width: '20' },
+//   { width: '20' },
+//   { width: '20' },
+//   { width: '20' },
+//   { width: '20' },
+// ];
+// const rowsStyle     = { alignment: { vertical: 'middle', horizontal: 'left', wrapText: false } };
+
+// const sheets = {
+//   sheet1: {
+//     rows,
+//     colsStyle,
+//     headRowsStyle: [],
+//     rowsStyle,
+//     cellStyleMap : {
+//       'E1': {
+//         font  : { bold: true },
+//         fill  : { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FFCCFFFF' }, fgColor: { argb: 'FFFF99CC' } },
+//         border: { diagonal: { up: true, down: true, style: 'thick' } },
+//       },
+//       'D1': {
+//         font  : { bold: true },
+//         fill  : { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FFCCFFFF' }, fgColor: { argb: 'FFFF99CC' } },
+//         border: { diagonal: { up: true, down: true, style: 'thick' } },
+//       },
+//       'B2': {
+//         font  : { bold: true },
+//         fill  : { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FFCCFFFF' }, fgColor: { argb: 'FFFF99CC' } },
+//         border: { diagonal: { up: true, down: true, style: 'thick' } },
+//       },
+//     },
+//   },
 // };
 // generateTable('./', sheets);
