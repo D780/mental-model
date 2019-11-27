@@ -55,9 +55,16 @@ declare module 'egg' {
     where: sequelize.WhereOptions;
     /** 是否必须 影响联表方式 left join | join */
     required: boolean;
+    /** 
+     * 搜索数据范围，可选值 'default' 'deleted' 'updated' 'all'，默认值为 'default' 搜索范围会忽略假删除的数据。其他三项
+     * 为其字面意思，分别为：已经删除的（假删除），被编辑过的（已过滤假删除数据），所有的 
+     */
+    scope: Scope;
     /**嵌套循环 */
     include: Include;
   }
+
+  type Scope = 'default' | 'deleted' | 'updated' | 'all';
 
   /** 关联信息类型 */
   type Include = {    
