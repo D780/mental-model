@@ -64,6 +64,10 @@ declare module 'egg' {
     include: Include;
   }
 
+  /** 
+   * 搜索数据范围，可选值 'default' 'deleted' 'updated' 'all'，默认值为 'default' 搜索范围会忽略假删除的数据。其他三项
+   * 为其字面意思，分别为：已经删除的（假删除），被编辑过的（已过滤假删除数据），所有的 
+   */
   type Scope = 'default' | 'deleted' | 'updated' | 'all';
 
   /** 关联信息类型 */
