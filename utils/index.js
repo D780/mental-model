@@ -162,6 +162,22 @@ function JSONReviver(key, value) {
 }
 
 /**
+ * 普通对象应用 JSON 的 reviver 插件
+ *
+ * @param {object} obj 对象
+ * @param {reviver} reviver 插件方法
+ */
+function applyReviver(obj, reviver) {
+  _.map(obj, (val, key) => {
+    if (typeof val === 'object') {
+      obj[key] = applyReviver(val, reviver);
+    } else {
+      obj[key] = reviver(key, val);
+    }
+  });
+}
+
+/**
  * 对象字符串化(支持 symbol)
  * objectStringify extra
  *
