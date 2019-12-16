@@ -47,14 +47,15 @@ module.exports = {
   getPinyin,
 };
 
+
 /**
  * 对象字符串化
  *
  * @param {Object} obj    输入对象
  * @param {Function} [replacer] replacer
- * @param {Number} [indent]   缩进空格数 最大值为10（JSON.stringify限制）
- * @param {Number} [prefixIndent]   缩进修正值 默认0（即整体左测修正缩进，如设置为 2，每一行默认追加两个空格在行首）
- * @returns {String}
+ * @param {number} [indent]   缩进空格数 最大值为10（JSON.stringify限制）
+ * @param {number} [prefixIndent]   缩进修正值 默认0（即整体左测修正缩进，如设置为 2，每一行默认追加两个空格在行首）
+ * @returns {string}
  */
 function objectStringify(obj, replacer, indent, prefixIndent) {
   if (!obj) {
@@ -63,19 +64,14 @@ function objectStringify(obj, replacer, indent, prefixIndent) {
 
   let ret;
   if (indent >= 1) {
-    ret = JSON.stringify(obj, replacer, indent)
-      .replace(/"([^"]+)"(\s*:\s*)/g, '$1$2')
-      .replace(/"/g, '\'');
+    ret = JSON.stringify(obj, replacer, indent);
   } else {
-    ret = JSON.stringify(obj, replacer)
-      .replace(/"([^"]+)"(\s*:\s*)/g, '$1$2 ')
-      .replace(/,/g, ', ')
-      .replace(/:\{/g, ': {')
-      .replace(/\{/g, '{ ')
-      .replace(/\}/g, ' }')
-      .replace(/\{\s\s\}/g, '{}')
-      .replace(/"/g, '\'');
+    ret = JSON.stringify(obj, replacer, 2)
+      .replace(/\s*\n\s*/g, ' ');
   }
+  ret = ret.replace(/"(\w+)"(\s*:\s*)/g, '$1$2')
+    .replace(/(?<![\\])"/g, '\'')
+    .replace(/\\"/g, '"');
   if (prefixIndent >= 1) {
     const spaces = new Array(prefixIndent + 1).join(' ');
     ret = spaces + ret.replace(/\n/g, `\n${spaces}`);
@@ -86,7 +82,7 @@ function objectStringify(obj, replacer, indent, prefixIndent) {
 /**
  * 字符串对象化 (对类 JSON 格式字符串 转换成相应对象)
  *
- * @param {String} str    输入字符攒
+ * @param {string} str    输入字符攒
  * @param {Function} [reviver] reviver
  * @returns {Object}
  */
@@ -94,16 +90,26 @@ function stringObjectify(str, reviver) {
   if (!str) {
     return str;
   }
-
-  const json = str.replace(/'/g, '"')
-    .replace(/(\w[^\s:"]+)(\s*:\s*)/g, '"$1"$2')
-    .replace(/,\s*"\w[^"]+"\s*:\s*undefined/g, '')
-    .replace(/"\w[^"]+"\s*:\s*undefined\s*,/g, '');
+  const json = str.replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\\"')
+    .replace(/\\?'/g, '"')
+    .replace(/(\w+)(\s*:\s*)/g, '"$1"$2')
+    .replace(/,\s*"\w+"\s*:\s*undefined/g, '')
+    .replace(/"\w+"\s*:\s*undefined\s*,/g, '');
   let ret = {};
   try {
     ret = JSON.parse(json, reviver);
   } catch (e) {
-    // eslint-keep
+    // 如果 JSON 转换失败，尝试使用 new Function 转换，若依然失败则返回空对象
+    try {
+      // eslint-disable-next-line no-new-func
+      ret = (new Function(`return ${str}`))();
+      if (reviver) {
+        applyReviver(ret, reviver);
+      }
+    } catch (e2) {
+      /* eslint-keep */
+    }
   }
   return ret;
 }
