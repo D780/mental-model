@@ -90,7 +90,8 @@ function stringObjectify(str, reviver) {
   if (!str) {
     return str;
   }
-  const json = str.replace(/\\/g, '\\\\')
+  const json = str.replace(/\s*\n\s*/g, '')
+    .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\\"')
     .replace(/\\?'/g, '"')
     .replace(/(\w+)(\s*:\s*)/g, '"$1"$2')
