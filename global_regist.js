@@ -4,7 +4,6 @@
 /* eslint-disable */
 
 global.Promise  = require('bluebird');
-global.fs       = require('fs-extra');
 global._        = require('lodash');
 global.NonError = require('./lib/non-error');
 

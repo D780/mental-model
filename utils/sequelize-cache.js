@@ -14,7 +14,6 @@ const funcMap = {
   instance: ['decrement', 'destroy', 'increment', 'reload', 'restore', 'save', 'set', 'setDataValue', 'update'],
 };
 
-
 module.exports = (Sequelize, client) => {
   Sequelize.Model.cache = function(ttl) {
     return bulidClassMethod(this, client, ttl || 3600);
@@ -30,7 +29,7 @@ function bulidClassMethod(Model, client, ttl) {
 
   _.map(funcMap.get, func => {
     retFunc[func] = (async function() {
-      const optMD5 = md5(JSON.stringify(`${func}${symbolStringify(arguments[0])}`));
+      const optMD5 = md5(`${func}${JSON.stringify(symbolStringify(arguments[0]))}`);
       const cacheKey = `${KEYPREFIX}:${this.name}:${associateModels(arguments[0])}:${optMD5}`;
       let ret = await client.get(cacheKey);
       if (ret) {
@@ -51,7 +50,7 @@ function bulidClassMethod(Model, client, ttl) {
 
   _.map(funcMap.save, func => {
     retFunc[func] = (async function() {
-      await client.mdel(`${KEYPREFIX}:*${this._modelOptions.name.singular}*`);
+      await client.mdel(`${KEYPREFIX}:*${this.options.name.singular}*`);
       return await Model[func](...arguments);
     }).bind(Model);
   });
@@ -62,7 +61,7 @@ function buildInstanceMethod(Instance, client, ttl) {
   const retFunc = { ...Instance };
   _.map(funcMap.instance, func => {
     retFunc[func] = (async function() {
-      await client.mdel(`${KEYPREFIX}:*${this._modelOptions.name.singular}*`);
+      await client.mdel(`${KEYPREFIX}:*${this.options.name.singular}*`);
       return await Instance[func](...arguments);
     }).bind(Instance);
   });

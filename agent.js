@@ -26,7 +26,7 @@ module.exports = async agent => {
       });
       return `(${$1}) : `;
     });
-    agent.logger.info('[Agent]', '[model]', chalk.magenta(sql), `(${args[1]}ms)`);
+    agent.logger.info('[agent]', '[model]', chalk.magenta(sql), `(${args[1]}ms)`);
   };
   agent.beforeStart(async () => {
     await agent.model.sync({ force: agent.config.env === 'unittest' });

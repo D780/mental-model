@@ -34,10 +34,10 @@ const DEFAULT_FORMAT = ':remote-addr - -'
    *   - `:status`
    *
    * @returns {Function}
-   * @param {Object} options
-   * @param {String} options.level AUTO|INFO|WARN|ERROR
-   * @param {String|Function} options.format
-   * @param {String} options.nolog
+   * @param {Object} options -
+   * @param {string} options.level AUTO|INFO|WARN|ERROR
+   * @param {string|Function} options.format -
+   * @param {string} options.nolog -
    * @api public
    */
 module.exports = function(options) {
@@ -112,8 +112,8 @@ module.exports = function(options) {
  * adding this function prevents the Cyclomatic Complexity,
  * for the assemble_tokens function at low, to pass the tests.
  *
- * @param  {context} ctx
- * @returns {String}
+ * @param  {context} ctx -
+ * @returns {string}
  * @api private
  */
 function getUrl(ctx) {
@@ -122,14 +122,14 @@ function getUrl(ctx) {
 
 
 /**
-   * Adds custom {token, replacement} objects to defaults,
-   * overwriting the defaults if any tokens clash
-   *
-   * @param  {Context} ctx
-   * @param  {Array} customTokens
-   *    [{ token: string-or-regexp, replacement: string-or-replace-function }]
-   * @returns {Array}
-   */
+ * Adds custom {token, replacement} objects to defaults,
+ * overwriting the defaults if any tokens clash
+ *
+ * @param  {Context} ctx -
+ * @param  {Array} customTokens
+ *    [{ token: string-or-regexp, replacement: string-or-replace-function }]
+ * @returns {Array}
+ */
 function assembleTokens(ctx, customTokens) {
   const arrayUniqueTokens = array => {
     const a = array.concat();
@@ -196,9 +196,9 @@ function assembleTokens(ctx, customTokens) {
 /**
    * Return formatted log line.
    *
-   * @param  {String} str
-   * @param {Array} tokens
-   * @returns {String}
+   * @param  {string} str -
+   * @param {Array} tokens -
+   * @returns {string}
    * @api private
    */
 function format(str, tokens) {
@@ -211,7 +211,7 @@ function format(str, tokens) {
 /**
    * Return RegExp Object about nolog
    *
-   * @param  {String|Array} nolog
+   * @param  {string|Array} nolog -
    * @returns {RegExp}
    * @api private
    *

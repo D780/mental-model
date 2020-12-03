@@ -2,7 +2,6 @@
     "extends": "eslint-config-egg",
     "globals": {
         "Promise": true,
-        "fs": true,
         "_": true,
         "NonError": true,
         "Sequelzie": true,
@@ -20,15 +19,14 @@
         }],
         "no-unexpected-multiline": "error",
         "valid-jsdoc": ["warn", {
-            "prefer": {
-                "return": "returns"
-            },
+            "prefer": { "arg": "param", "argument": "param", "class": "constructor", "return": "returns", "virtual": "abstract" },
+            "preferType": { "Boolean": "boolean", "Number": "number", "object": "Object", "String": "string" },
             "requireReturn": false,
             "requireReturnType": false,
             "requireReturnDescription": false,
             "requireParamDescription": false
         }],
-        "jsdoc/require-param-description" :0,
+        "jsdoc/require-param-description" :1,
         "jsdoc/check-param-names" :0,
         "jsdoc/check-tag-names" :0,
         "valid-typeof": ["error", {

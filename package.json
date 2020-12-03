@@ -1,6 +1,6 @@
 {
   "name": "mental-model",
-  "version": "1.0.1",
+  "version": "1.2.0",
   "description": "",
   "egg": {
     "declarations": true
@@ -9,7 +9,7 @@
     "apache-md5": "^1.1.2",
     "bluebird": "^3.7.1",
     "chalk": "^3.0.0",
-    "egg": "^2.25.0",
+    "egg": "^2.26.0",
     "egg-bcrypt": "^1.1.0",
     "egg-cors": "^2.2.3",
     "egg-passport": "^2.1.0",
@@ -24,6 +24,7 @@
     "gm": "^1.23.1",
     "ipaddr.js": "^1.9.1",
     "lodash": "^4.17.15",
+    "md5-file": "^5.0.0",
     "moment": "^2.24.0",
     "mysql2": "^2.0.0",
     "pinyin": "^2.9.0",

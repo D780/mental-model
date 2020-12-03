@@ -12,7 +12,7 @@ const ErrorTraceLogger = require('./utils/error_trace_logger');
 
 /**
  * app entry
- * @param {Egg.Application} app
+ * @param {Egg.Application} app - Application
  */
 module.exports = async app => {
   app.config.coreMiddleware.unshift('accessLogger');
@@ -29,6 +29,14 @@ module.exports = async app => {
 
   app.model.log = function() {
     if (this.options.logging === false) { return; }
+
+    const RUNFILEPATH = Symbol.for('baseService#runFilePath');
+    let prefix = '';
+    if (app[RUNFILEPATH]) {
+      const pi = app[RUNFILEPATH];
+      prefix = `${pi.fileName.slice(pi.fileName.indexOf('app'))}:${pi.lineNumber}:${pi.columnNumber}`;
+    }
+
     const args = Array.prototype.slice.call(arguments);
     const sql  = args[0].replace(/Executed \((.+?)\):\s{0,1}/, ($, $1) => {
       if ($1 === 'default') {
@@ -47,9 +55,9 @@ module.exports = async app => {
       return `(${$1}) : `;
     });
     if (app.config.env === 'prod') {
-      app.logger.info('[model]', chalk.magenta(sql), `(${args[1]}ms)`);
+      app.logger.info('[model]', chalk.green(`[${prefix}]`), chalk.magenta(sql), `(${args[1]}ms)`);
     }
-    app.errorTraceLogger.info('[model]', chalk.magenta(sql), `(${args[1]}ms)`);
+    app.errorTraceLogger.info('[model]', chalk.green(`[${prefix}]`), chalk.magenta(sql), `(${args[1]}ms)`);
   };
 
   // 调整 router 加载顺序，先 app/router.js, 再是 app/route/**.js
