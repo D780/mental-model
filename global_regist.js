@@ -3,7 +3,6 @@
 // 注册全局变量
 /* eslint-disable */
 
-global.Promise  = require('bluebird');
 global._        = require('lodash');
 global.NonError = require('./lib/non-error');
 

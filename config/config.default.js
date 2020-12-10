@@ -20,7 +20,7 @@ module.exports = appInfo => {
 
   /** 站点基本信息 */
   customConfig.web = {
-    name: 'mental-model',
+    name: '../',
     url : 'http://www.mental-model.com',
     port: 9000,
   };

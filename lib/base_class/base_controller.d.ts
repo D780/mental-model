@@ -1,4 +1,6 @@
 import Egg from 'egg';
+import { BaseService } from 'egg-valparams';
+import Excel from 'exceljs';
 import './base_service';
 
 declare module 'egg' {
@@ -6,11 +8,6 @@ declare module 'egg' {
    * 构造方法 prefix 参数
    */
   type BaseControllerPrefix = {
-    // * @param {number}   [preset.limitMaxPage]      - 限制参数，限制最大页码 （设置了这个，list 类方法的 offset 参数则不会生效）
-    // * @param {number}   [preset.limitMaxSize]      - 限制参数，限制最大页面大小
-    // * @param {Array|string} [preset.limitInclude]      - 限制参数，限制可联的表
-    // * @param {Array|string} [preset.fieldMap]      - 字段映射表（设置相应值可以对外屏蔽真实数据库字段，而直接使用这个映射表的 key 作为参数传入）
-    // * @param {Function} [preset.addLogCallback]    -  记录日志方法，无参数，联动 baseService 的操作日志功能，从 ctx.opetatorLogs 中取数据库日志信息。
     /* param 参数名（对应主键） */
     param ? : string = 'id';
     /* 默认 20 分页大小 */
@@ -27,11 +24,13 @@ declare module 'egg' {
     sort ? : string[];
     /* 使用自定义的返回值处理方法（传入参数为 1 结果 2 状态码） */
     async response ? (result: any, status: number) : Promise < any > ;
+    /* 导出表格风格配置 */
+    export ? : exportType;
     /* 限制参数，限制返回的参数可选值 */
     limitAttributes ? : string[];
     /* 限制参数，限制子表返回的参数可选值 { [ 子表名 ]: [ ...limitAttributes ] } */
     limitIncludeAttributes ? : {
-      [key: string]: string[]
+      [key: string]: string[];
     };
     /* 限制参数，限制可搜索字段 */
     limitSearchFields ? : string | string[];
@@ -51,6 +50,14 @@ declare module 'egg' {
     async addLogCallback ? () : Promise < any > ;
   }
 
+  /* 导出表格风格配置 */
+  type exportType = {
+    colsStyle: Excel.Style[];
+    headRowsStyle: Excel.Style[][];
+    rowsStyle: Excel.Style[];
+    cellStyleMap: { [key: string]: Excel.Style };
+  }
+
   /**
    * BaseService
    * service 基类
@@ -65,7 +72,32 @@ declare module 'egg' {
    * @extends {Egg.Controller}
    */
   class BaseController extends Egg.Controller {
-    Service: BaseService;
+    // instance prototype
+    Service: Egg.BaseService;
+    model: Egg.EggModelType|Sequelize.ModelType;
+    enums: { [key:string]: { [ev:string]: string } };
+    logging: Egg.EggLogger;
+    param: string;
+    size: number;
+    rules: Object;
+    attributes: string[];
+    includeAttributes: string[];
+    include: string[];
+    sort: string[];
+    fieldMap: { [key:string]: string };
+    export: exportType;
+    limit: {
+      attributes: string[];
+      includeAttributes: {
+        [key: string]: string[];
+      };
+      searchFields: string[];
+      include: string[];
+      maxPage: number;
+      maxSize: number;
+    }; 
+    async response: (result: any, status: number) => Promise < any > ;
+    async addLogCallback: () => Promise < any > ;
     /**
      * Creates an instance of BaseController.
      *

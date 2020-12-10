@@ -377,6 +377,28 @@ declare module 'egg' {
    * @extends {Egg.Service}
    */
   class BaseService extends Egg.Service {
+    // instance prototype
+    model: Egg.EggModelType|Sequelize.ModelType;
+    logging: Egg.EggLogger;
+    sequelize: Egg.IModel;
+    size: number;
+    include: { [key:string]: Egg.IncludePreset };
+    fake: boolean;
+    sessionUserIdField: string;
+    createUserIdField: string;
+    createTimeField: string;
+    updateUserIdField: string;
+    updateTimeField: string;
+    deleteUserIdField: string;
+    deleteTimeField: string;
+    operatorLog: boolean;
+    fieldNameMap: { [key:string]: string };
+    modelNameMap: { [key:string]: string };
+    enums: { [key:string]: { [ev:string]: string } };
+    operatorLogInfos: any;
+    logField: string[];
+    async addLogCallback: (log: OperatorLog) => Promise < any > ;
+
     /**
      * Creates an instance of BaseService.
      *
@@ -392,13 +414,13 @@ declare module 'egg' {
      * @param {string}   [preset.updateTimeField]    - 可选，updateTime 字段名，默认 updateTime，在 edit 接口会自动追加上相应的数据
      * @param {string}   [preset.deleteUserIdField]  - 可选，fake 为 true 时有效，deleteUserId 字段名，默认 deleteUserId，在 remove 接口会自动追加上相应的数据 (session.user.id)
      * @param {string}   [preset.deleteTimeField]    - 可选，fake 为 true 时有效，deleteTime 字段名，默认 deleteTime，在 remove 接口会自动追加上相应的数据
-     * @param {boolean|Object}  [preset.logging=false]     日志输出
-     * @param {Object.<string, Egg.IncludePreset>}  [preset.include]      预设联表关系={key:value}
-     * @param {boolean}   [preset.operatorLog]    -  是否开启操作日志整理，开启则会把操作记录整理到 ctx.operatorLogs 中
-     * @param {string[]}  [preset.logField]       -  日志记录字段列表，仅 operatorLog === true 有用。同时传入 logField、logOmitField 时取交集
-     * @param {string[]}  [preset.logOmitField]  -  日志记录排除字段列表，仅 operatorLog === true 有用。同时传入 logField、logOmitField 时取交集
-     * @param {Object}   [preset.enums]           -  字段可取值枚举，格式为 { [字段名]: 值映射对象 } 如 { enable: { 0: '禁用', 1: '启用' } } 。 仅 operatorLog === true 有用。用于日志信息显示。
-     * @param {Function} [preset.addLogCallback]  -  记录日志方法，方法传入一个参数：该方法产生的操作日志。仅 operatorLog === true 有用。
+     * @param {boolean|Object}  [preset.logging=false] - 日志输出
+     * @param {Object.<string, Egg.IncludePreset>}  [preset.include] - 预设联表关系={key:value}
+     * @param {boolean}  [preset.operatorLog]    -  是否开启操作日志整理，开启则会把操作记录整理到 ctx.operatorLogs 中
+     * @param {string[]} [preset.logField]       -  日志记录字段列表，仅 operatorLog === true 有用。同时传入 logField、logOmitField 时取交集
+     * @param {string[]} [preset.logOmitField]   -  日志记录排除字段列表，仅 operatorLog === true 有用。同时传入 logField、logOmitField 时取交集
+     * @param {Object}   [preset.enums]          -  字段可取值枚举，格式为 { [字段名]: 值映射对象 } 如 { enable: { 0: '禁用', 1: '启用' } } 。 仅 operatorLog === true 有用。用于日志信息显示。
+     * @param {Function} [preset.addLogCallback] -  记录日志方法，方法传入一个参数：该方法产生的操作日志。仅 operatorLog === true 有用。
      * @memberof BaseService
      */
     constructor(ctx: Egg.Context, model: Egg.EggModelType | Sequelize.ModelType, preset ? : BaseServicePrefix);

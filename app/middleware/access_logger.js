@@ -55,7 +55,7 @@ module.exports = function(options) {
   return async (ctx, next) => {
     const thisLogger = ctx.logger;
     const errorTraceLogger = ctx.app.errorTraceLogger;
-    const objectStringify = ctx.app.utils.objectStringify;
+    const objectStringify = ctx.app.objectStringify;
     // mount safety
     if (ctx.request._logging) return next();
     // nologs
