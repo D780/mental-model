@@ -52,23 +52,19 @@ declare module 'egg' {
 
   /* 导出表格风格配置 */
   type exportType = {
-    colsStyle: Excel.Style[];
-    headRowsStyle: Excel.Style[][];
-    rowsStyle: Excel.Style[];
+    colsStyle: Excel.Column[];
+    headRowsStyle: (Excel.Style | Excel.Style[])[];
+    rowsStyle: (Excel.Style | Excel.Style[])[];
     cellStyleMap: { [key: string]: Excel.Style };
   }
 
   /**
-   * BaseService
-   * service 基类
-   * 提供基于 sequelize@^4 的常用功能的实现，减少没必要冗余代码
-   * 包括（暂定）list[AndCount][All] count[All]
-   *            info[ById]
-   *            add[Multi] edit[ById] remove[ById] set
-   *            moreById refreshById indexById nth first last
-   *            increase[ById] decrease[ById] editSelf[ById]
-   *            move[ById] moveUp[ById] moveDown[ById] change[ById]
-   * @constructor BaseService
+   * BaseController
+   * controller 基类
+   * 
+   * 目前包含 list[All], show, add[Multi], edit[Multi], remove[Multi],  
+   * 
+   * @constructor BaseController
    * @extends {Egg.Controller}
    */
   class BaseController extends Egg.Controller {
@@ -112,6 +108,7 @@ declare module 'egg' {
      * @param {Array}    [preset.includeAttributes] - list[All] show方法 默认的子表返回的参数 默认全部
      * @param {Array}    [preset.include]           - list[All] show 方法 默认联表 默认为空
      * @param {Array}    [preset.sort]          - list[All]方法 默认排序方式
+     * @param {exportType} [preset.export]      - 导出表格风格配置
      * @param {Function} [preset.response]    - 使用自定义的返回值处理方法（传入参数为 1 结果 2 状态码）
      * @param {Array}    [preset.limitAttributes]   - 限制参数，限制返回的参数可选值
      * @param {Object}   [preset.limitIncludeAttributes] - 限制参数，限制子表返回的参数可选值 { [ 子表名 ]: [ ...limitAttributes ] }
@@ -256,6 +253,28 @@ declare module 'egg' {
     async add(): Promise < null > ;
 
     /**
+     * ### 创建新的 资源 (批量)
+     *
+     * ```js
+     * // example: instance
+     * 返回结果
+     * ```
+     *
+     * @apiname /resources/multi
+     * @method POST
+     * @login true
+     * @whocanuse
+     *
+     * @param {Object} body 请求参数
+     *
+     * @param {Object} resp 返回值说明
+     *
+     * @returns
+     * @memberof BaseController
+     */
+    async addMulti(): Promise < null > ;
+
+    /**
      * ### 编辑 资源
      *
      * ```js
@@ -299,7 +318,7 @@ declare module 'egg' {
      * @returns
      * @memberof BaseController
      */
-    async editAll(): Promise < null > ;
+    async editMulti(): Promise < null > ;
 
     /**
      * ### 删除 资源
@@ -342,7 +361,7 @@ declare module 'egg' {
      * @returns
      * @memberof BaseController
      */
-    async removeAll(): Promise < null > ;
+    async removeMulti(): Promise < null > ;
 
     /**
      * 处理列表查询参数
@@ -397,11 +416,53 @@ declare module 'egg' {
     handleQueryFields(): null;
 
     /**
-     * 数据库中唯一字段检测（add、edit、editAll 用）
+     * 将属性值`翻译成`中文(comment)
      *
-     * @param {string} type - add、edit、editAll
+     * @param {Array|string} attr 属性[数组]
+     * @returns {Array|string}
      */
-    async handleUniqueCheck(type): Promise < null > ;
+    handleGetAttributeComment(attr: Array|string): Array|string
+
+    /**
+     * 处理将要导出的数据的属性值
+     *
+     * null undefined 值处理成空字符串
+     * 时间格式 处理成 YYYY-MM-DD HH:mm:ss
+     * 含有枚举（BaseService 配置）处理成相应的枚举值
+     *
+     * @param {Array<Object>} rows 导出列表
+     * @returns {Array<*>}
+     */
+    handleGetRowsAttributeValue(rows: Array<Object>): Array<any>
+
+    /**
+     * 数据库中唯一字段检测（add、edit、addMulti、editMulti 用）
+     *
+     * @param {string} type - add、edit、addMulti、editMulti
+     * @param {Array<Object>} records - 添加记录列表 - addMulti 模式使用
+     */
+    async handleUniqueCheck(type: string, records?: Array<Object>): Promise < null > ;
+
+    /**
+     * 处理列表导出功能(单页)
+     *
+     * @param {string} tmpPath - 表格临时存储目录
+     * @param {string} exportName - 导出文件名
+     * @param {Array}  head - 表头数据
+     * @param {Array}  rows - 列表数据
+     * @param {exportType} [sheetStyle] - 表格配置 详细配置内容参考 utils/excel.js
+     * @param {Excel.Column[]} [sheetStyle.colsStyle]     - 对应列的样式 (主要是设置列宽等通用属性)
+     * @param {(Excel.Style | Excel.Style[])[]} [sheetStyle.headRowsStyle] - 头部行的样式（可以设置多行, 用于设置表头的样式）
+     *                             如 [[CellStyle],rowStyle,[CellStyle]], 这样就设置了前三行的样式了
+     *                             如果项是 CellStyle(数组)则设置每一个单元格的样式, 如果是 rowStyle(对象) 则设置整一行的样式
+     * @param {(Excel.Style | Excel.Style[])[]} [sheetStyle.rowsStyle]     - 基本行的样式（用于设置表格内容每一行的样式, 可不设置使用默认样式）
+     *                             从 headRowsStyle.length+1 行开始设置后面所有行的样式 ,
+     *                             如果是数组则设置每一个单元格的样式, 如果是对象则设置整一行的样式
+     * @param {{ [key: string]: Excel.Style }} [sheetStyle.cellStyleMap]  - 单元格样式，针对特定单元格指定样式
+     *                             格式如 { 'A3': CellStyle }
+     *                             键为单元格坐标，值为单元格样式
+     */
+    async handleExportExcel(tmpPath: string, exportName: string, head: any[], rows: any[], sheetStyle: exportType): Promise < null > ;
 
     /**
      * response json data to client
