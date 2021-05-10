@@ -16,21 +16,22 @@ const funcMap = {
 
 module.exports = (Sequelize, client) => {
   Sequelize.Model.cache = function(ttl) {
-    return bulidClassMethod(this, client, ttl || 3600);
+    return bulidClassMethod(this, client, _.isUndefined(ttl) ? 3600 : ttl);
   };
   Sequelize.Model.prototype.cache = function(ttl) {
-    return buildInstanceMethod(this, client, ttl || 3600);
+    return buildInstanceMethod(this, client, _.isUndefined(ttl) ? 3600 : ttl);
   };
   client.mdel(`${KEYPREFIX}:*`);
 };
 
 function bulidClassMethod(Model, client, ttl) {
   const retFunc = { ...Model };
+  retFunc.name = Model.name;
 
   _.map(funcMap.get, func => {
     retFunc[func] = (async function() {
-      const optMD5 = md5(`${func}${JSON.stringify(symbolStringify(arguments[0]))}`);
-      const cacheKey = `${KEYPREFIX}:${this.name}:${associateModels(arguments[0])}:${optMD5}`;
+      const optMD5 = md5(`${func}${JSON.stringify(symbolStringify(_.omit(arguments[0], ['transaction', 'lock'])))}`);
+      const cacheKey = `${KEYPREFIX}:${this.name}:${associateModels(_.omit(arguments[0], ['transaction', 'lock']))}:${optMD5}`;
       let ret = await client.get(cacheKey);
       if (ret) {
         if (ret.rows) {
@@ -42,7 +43,11 @@ function bulidClassMethod(Model, client, ttl) {
         }
       } else {
         ret = await Model[func](...arguments);
-        await client.set(cacheKey, ret, 'EX', ttl);
+        if (ttl && Number(ttl) > 0) {
+          await client.set(cacheKey, ret, 'EX', ttl);
+        } else {
+          await client.set(cacheKey, ret);
+        }
       }
       return ret;
     }).bind(Model);

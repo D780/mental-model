@@ -94,8 +94,11 @@ declare module 'egg' {
      *   save    : ['bulkCreate', 'create', 'decrement', 'destroy', 'drop', 'increment', 'update', 'upsert'],
      *   instance: ['decrement', 'destroy', 'increment', 'reload', 'restore', 'save', 'set', 'setDataValue', 'update'],
      * }
+     * 
+     * @param {number} [ttl=3600] 缓存生命周期，传 0 或 -1 则表示永久
+     * 
      */
-    static cache(): sequelize.ModelType;
+    static cache(ttl=3600): sequelize.ModelType;
   }
   type EggModelType = typeof EggModel;
   interface IModel {

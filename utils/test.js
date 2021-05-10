@@ -7,19 +7,13 @@ const Redis = require('ioredis');
 const redisCommands = require('redis-commands');
 async function main(){
   const client =new Redis({
-    host:'10.32.64.232',
+    host:'*****',
     port:6379,
-    password:'duoyi@2016',
+    password:'*****',
     db:20
   })
 
   let cache = new Cache(client)
-  // let cache = new Cache({
-  //   host:'10.32.64.232',
-  //   port:6379,
-  //   password:'duoyi@2016',
-  //   db:20
-  // })
 
   // let cache = new Cache(client)
   cache.getset

@@ -70,16 +70,16 @@ function objectStringify(obj, replacer, indent, prefixIndent) {
     ret = JSON.stringify(obj, replacer, indent);
   } else {
     ret = JSON.stringify(obj, replacer, 2)
-      .replace(/\[\s*\n\s*/g, '[')
-      .replace(/\s*\n\s*\]/g, ']')
-      .replace(/\s*\n\s*/g, ' ');
+      .replace(/\[ *\n */g, '[')
+      .replace(/ *\n *\]/g, ']')
+      .replace(/ *\n */g, ' ');
   }
   const map = {};
   // 先匹配出字符串键值对，将字符串替换成随机串标记起来，然后处理其他情况，最后再吧标记的随机串替换回原字符串
   // 因为现实字符串使用单引号，所以原字符串需要进行一层处理 replace(/\'/g, '\\\'').replace(/\\\"/g, '\"')
   ret = ret
     // 匹配值为字符串的键值对 "xxx-:-xxx": "XXXXX"
-    .replace(/"((?:(?!(?<!\\)").)+)"(\s*:\s*)"((?:(?!(?<!\\)").)*)"(\s*,|\s*\})/g, ($, $1, $2, $3, $4) => {
+    .replace(/"((?:(?!(?<!\\)").)+)"( *: *)"((?:(?!(?<!\\)").)*)"( *[,\}\r\n])/g, ($, $1, $2, $3, $4) => {
       $3 = $3 || '';
       const oriStr = $3.replace(/\\\"/g, '\"').replace(/\\\\/g, '\\').replace(/\'/g, '\\\'');
       const sk = randomKeyMap(map, {
@@ -94,7 +94,7 @@ function objectStringify(obj, replacer, indent, prefixIndent) {
     })
     // 匹配所有字符串，并取其中的数组中的字符串进行处理
     // eslint-disable-next-line max-params
-    .replace(/(?<=\[\s*|,\s*)(?<q>'|")((?:(?!(?<!\\)\k<q>).)*)\k<q>\s*(\s*\]|\s*,|\s*:)/g, ($, $1, $2, $3, $4, $5, $6) => {
+    .replace(/(?<=[,\[\r\n] *)(?<q>'|")((?:(?!(?<!\\)\k<q>).)*)\k<q> *( *[,\]\r\n])/g, ($, $1, $2, $3, $4, $5, $6) => {
       if ($3 === ':') {
         return $;
       }
@@ -116,7 +116,7 @@ function objectStringify(obj, replacer, indent, prefixIndent) {
       return `'[[[---REPLACE${sk}---]]]'${$3}`;
     })
     // 匹配其余键
-    .replace(/"((?:(?!(?<!\\)").)+)"(\s*:\s*)(?!'|")/g, ($, $1, $2) => {
+    .replace(/"((?:(?!(?<!\\)").)+)"( *: *)(?!'|")/g, ($, $1, $2) => {
       if (/^\w+$/.test($1)) {
         return `${$1}${$2}`;
       }
@@ -163,10 +163,10 @@ function stringObjectify(str, reviver) {
     return str;
   }
   const map = {};
-  let json = str.replace(/\s*\n\s*/g, '')
+  let json = str.replace(/ *\n */g, '')
     // 匹配值为字符串的键值对 key: 'value' | "special-:-key": "value" | 'key': "value"
     // eslint-disable-next-line max-params
-    .replace(/(?:(\w+)|(?<q>'|")((?:(?!(?<!\\)\k<q>).)+)\k<q>)(\s*:\s*)(?<q2>'|")((?:(?!(?<!\\)\k<q2>).)*)\k<q2>/g, ($, $1, $2, $3, $4, $5, $6, $7, $8, $9) => {
+    .replace(/(?:(\w+)|(?<q>'|")((?:(?!(?<!\\)\k<q>).)+)\k<q>)( *: *)(?<q2>'|")((?:(?!(?<!\\)\k<q2>).)*)\k<q2>/g, ($, $1, $2, $3, $4, $5, $6, $7, $8, $9) => {
       // const oriStr = $6.replace(/\\\'/g, '\'').replace(/\\/g, '\\\\').replace(/\"/g, '\\\"');
       $6 = $6 || '';
       const q2 = $9.q2;
@@ -184,7 +184,7 @@ function stringObjectify(str, reviver) {
     })
     // 匹配所有字符串，并取其中的数组中的字符串进行处理
     // eslint-disable-next-line max-params
-    .replace(/(?<=\[\s*|,\s*)(?<q>'|")((?:(?!(?<!\\)\k<q>).)+)\k<q>(\s*\]|\s*,|\s*:)/g, ($, $1, $2, $3, $4, $5, $6) => {
+    .replace(/(?<=[,\[\r\n] *)(?<q>'|")((?:(?!(?<!\\)\k<q>).)+)\k<q>( *[,\]\r\n])/g, ($, $1, $2, $3, $4, $5, $6) => {
       if ($3 === ':') {
         return $;
       }
@@ -193,7 +193,7 @@ function stringObjectify(str, reviver) {
       let $$$ = `"${$2}"`;
       // 断言：出现该情况的条件是字符串中 含有对象的写法，并且键值对中值使用了双引号包裹
       while (/\[\[\[---REPLACE(\d+)---\]\]\]/.test($$$)) {
-        $$$ = $$$.replace(/"((?:(?!(?<!\\)").)+)"(\s*:\s*)"\[\[\[---REPLACE(\d+)---\]\]\]"/g, ($$, $$1, $$2, $$3) =>
+        $$$ = $$$.replace(/"((?:(?!(?<!\\)").)+)"( *: *)"\[\[\[---REPLACE(\d+)---\]\]\]"/g, ($$, $$1, $$2, $$3) =>
           `${map[$$3].quotes[0]}${$$1}${map[$$3].quotes[0]}${$$2}${map[$$3].quotes[1]}${map[$$3].source}${map[$$3].quotes[1]}`);
       }
       $2 = $$$.slice(1, -1);
@@ -214,13 +214,13 @@ function stringObjectify(str, reviver) {
       return `"[[[---REPLACE${sk}---]]]"${$3}`;
     })
     // 匹配其余键
-    .replace(/(?:(\w+)|(?<q>'|")((?:(?!(?<!\\)\k<q>).)+)\k<q>)(\s*:\s*)(?!'|")/g, ($, $1, $2, $3, $4) => {
+    .replace(/(?:(\w+)|(?<q>'|")((?:(?!(?<!\\)\k<q>).)+)\k<q>)( *: *)(?!'|")/g, ($, $1, $2, $3, $4) => {
       const key = $1 || $3;
       return `"${key}"${$4}`;
     })
     // 兼容 undefined 的值
-    .replace(/,\s*(\w+)\s*:\s*undefined/g, '')
-    .replace(/(\w+)\s*:\s*undefined\s*,/g, '');
+    .replace(/, *(\w+) *: *undefined/g, '')
+    .replace(/(\w+) *: *undefined *,/g, '');
   // 解构保护的字符串值
   while (/\[\[\[---REPLACE(\d+)---\]\]\]/.test(json)) {
     json = json.replace(/\[\[\[---REPLACE(\d+)---\]\]\]/g, ($, $1) => map[$1].target);
@@ -646,7 +646,7 @@ function ip624(ip) {
 function getReqIp(req) {
   return ip624(
     req.headers['x-real-ip']
-    || (req.headers['x-forwarded-for'] && req.headers['x-forwarded-for'].split(/,\s?/)[0])
+    || (req.headers['x-forwarded-for'] && req.headers['x-forwarded-for'].split(/, ?/)[0])
     || (req.connection.remoteAddress
     || req.socket.remoteAddress
     || (req.connection.socket && req.connection.socket.remoteAddress))

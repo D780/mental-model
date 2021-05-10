@@ -14,15 +14,15 @@ exports.sequelize = {
 exports.redis = {
   clients: {
     session: {
-      host    : '10.32.64.232',
+      host    : '*****',
       port    : 6379,
-      password: 'duoyi@2016',
+      password: '*****',
       db      : 10,
     },
     cache: {
-      host    : '10.32.64.232',
+      host    : '*****',
       port    : 6379,
-      password: 'duoyi@2016',
+      password: '*****',
       db      : 11,
     },
   },
